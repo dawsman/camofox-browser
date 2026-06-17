@@ -58,7 +58,12 @@ RUN --mount=type=bind,source=dist,target=/dist \
 WORKDIR /app
 
 COPY package.json ./
-RUN npm install --production
+# better-sqlite3 has no prebuilt binary for linux/x64 on this node version, so it
+# falls back to node-gyp and needs a build toolchain (arm64 gets a prebuild). Add
+# it just for the install, then remove to keep the image small.
+RUN apt-get update && apt-get install -y --no-install-recommends make g++ python3 \
+    && npm install --production \
+    && apt-get purge -y make g++ && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
 COPY server.js ./
 COPY camofox.config.json ./
