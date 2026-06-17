@@ -726,9 +726,11 @@ async function closeSession(userId, session, {
     await clearSessionDownloads(session).catch(() => {});
   }
 
+  // checkpoint persistence BEFORE closing the context (was: close then emit,
+  // which made storageState() fail with "context has been closed")
+  await pluginEvents.emitAsync('session:destroyed', { userId: key, reason });
   await session.context.close().catch(() => {});
   sessions.delete(key);
-  await pluginEvents.emitAsync('session:destroyed', { userId: key, reason });
 
   if (clearLocks) {
     clearSessionLocks(session);
